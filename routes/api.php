@@ -2,10 +2,9 @@
 
 use App\Http\Controllers\Api\AdoptionApplicationController;
 use App\Http\Controllers\Api\PetController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -17,22 +16,16 @@ use Illuminate\Support\Facades\Hash;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
-Route::post('/login', function (Request $r) {
-    $r->validate(['email' => 'required|email', 'password' => 'required']);
-    $user = User::where('email', $r->email)->first();
-    if (!$user || !Hash::check($r->password, $user->password)) {
-        return response()->json(['message' => 'Invalid credentials'], 401);
-    }
-    $token = $user->createToken('api-token')->plainTextToken;
-    return response()->json(['token' => $token, 'user' => $user]);
-
-});
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/pets', [PetController::class, 'index']);
 Route::get('/pets/{pet}', [PetController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
     Route::post('/pets', [PetController::class, 'store']);
     Route::delete('/pets/{pet}', [PetController::class, 'destroy']);
     Route::put('/pets/{pet}', [PetController::class, 'update']);
