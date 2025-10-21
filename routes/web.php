@@ -23,6 +23,7 @@ Route::view('/register', 'auth.register')->name('register');
 Route::view('pets/create', 'pets.create');
 Route::view('/pets/edit', 'pets.edit');
 Route::view('/applications', 'applications.index');
+Route::view('/applications/manage', 'applications.manage');
 
 Route::view('/dashboard', 'dashboard')->name('dashboard');
 

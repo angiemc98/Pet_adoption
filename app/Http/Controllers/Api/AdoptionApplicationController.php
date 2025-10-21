@@ -15,9 +15,28 @@ class AdoptionApplicationController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-    {
-        //
+{
+    $user = auth()->user();
+
+   if ($user->role === 'adopter') {
+    return response()->json(
+        \App\Models\AdoptionApplication::where('adopter_id', $user->id)
+            ->with('pet')
+            ->get()
+    );
+}
+
+    if ($user->role === 'shelter') {
+        return response()->json(
+            \App\Models\AdoptionApplication::whereHas('pet', function($q) use ($user) {
+                $q->where('shelter_id', $user->id);
+            })->with('pet', 'adopter')->get()
+        );
     }
+
+    return response()->json(['message' => 'Rol no autorizado'], 403);
+}
+
 
     /**
      * Store a newly created resource in storage.

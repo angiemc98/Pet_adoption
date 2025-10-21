@@ -31,5 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/pets/{pet}', [PetController::class, 'update']);
 
     Route::post('/applications', [AdoptionApplicationController::class, 'store']);
+    Route::get('/applications', [AdoptionApplicationController::class, 'index']);
     Route::patch('/applications/{application}', [AdoptionApplicationController::class, 'update']);
+
 });

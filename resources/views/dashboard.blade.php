@@ -30,13 +30,10 @@ async function loadMyPets() {
             return;
         }
 
-        // Filtrar solo las del shelter autenticado (si tu API no lo hace)
-        const myPets = data.filter(pet => pet.shelter_id === data[0]?.shelter_id);
-
-        container.innerHTML = myPets.map(pet => `
+        container.innerHTML = data.map(pet => `
             <div class="col-md-4">
                 <div class="card shadow-sm">
-                    <img src="/storage/${pet.image ?? 'placeholder.png'}" class="card-img-top" style="height:200px; object-fit:cover;">
+                    <img src="/storage/${pet.photo_url ?? 'placeholder.png'}" class="card-img-top" style="height:200px; object-fit:cover;">
                     <div class="card-body">
                         <h5>${pet.name}</h5>
                         <p>${pet.species ?? ''} • ${pet.gender ?? ''}</p>

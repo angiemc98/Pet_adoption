@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AdoptionApplication extends Model
 {
+        use HasFactory;
+
         protected $fillable = [
             'pet_id',
             'adopter_id',

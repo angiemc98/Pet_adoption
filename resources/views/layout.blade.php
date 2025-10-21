@@ -33,8 +33,9 @@
             if (role === 'shelter') {
                 menu += `<a href="/dashboard" class="btn btn-warning btn-sm me-2">Mis Mascotas</a>`;
                 menu += `<a href="/pets/create" class="btn btn-success btn-sm me-2">Añadir Mascota</a>`;
+                menu += `<a href="/applications/manage" class="btn btn-info btn-sm me-2">Solicitudes Recibidas</a>`;
             } else if (role === 'adopter') {
-                menu += `<a href="/my-applications" class="btn btn-outline-light btn-sm me-2">Mis Solicitudes</a>`;
+                menu += `<a href="/applications" class="btn btn-outline-light btn-sm me-2">Mis Solicitudes</a>`;
             }
             menu += `<button id="logoutBtn" class="btn btn-danger btn-sm">Salir</button>`;
             navLinks.innerHTML = menu;

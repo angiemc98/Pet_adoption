@@ -5,104 +5,118 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Pet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PetController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index( Request $r)
+    public function index(Request $request)
     {
-        // Lógica para obtener la lista de mascotas
-        $q = Pet::query();
-        if ($r->has('species')) $q->where('species', $r->species);
-        if ($r->has('city')) $q->whereHas('shelter', fn($q) => $q->where('city', $r->city));
-        return $q->get();
+        $user = auth('sanctum')->user();
+
+        if (!$user) {
+            return Pet::where('status', 'available')->get();
+        }
+
+        if ($user->role === 'shelter') {
+            return Pet::where('shelter_id', $user->id)->get();
+        }
+
+        if ($user->role === 'adopter') {
+            return Pet::where('status', 'available')->get();
+        }
+
+        return Pet::all();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $r)
     {
-        //
         if (auth()->user()->role !== 'shelter') {
             return response()->json(['message' => 'only shelters can add pets'], 403);
         }
+
         $data = $r->validate([
             'name' => 'required|string|max:255',
             'species' => 'required|string|max:255',
             'breed' => 'nullable|string',
             'age' => 'required|integer|min:0',
-            'size' => 'nullable|in: small,medium,large',
-            'gender' => 'nullable|in: male,female',
+            'size' => 'nullable|in:small,medium,large',
+            'gender' => 'nullable|in:male,female,Macho,Hembra',
             'description' => 'nullable|string',
-            'image_url' => 'nullable|image|max:2048',
+            'photo_url' => 'nullable|image|max:2048',
             'vaccinated' => 'boolean',
             'is_sterilized' => 'boolean',
         ]);
+
         $data['shelter_id'] = auth()->id();
-        if ($r->hasFile('image_url')) {
-            $path = $r->file('image_url')->store('pets', 'public');
-            $data['image_url'] = $path;
+
+        if ($r->hasFile('photo_url')) {
+            $path = $r->file('photo_url')->store('pets', 'public');
+            $data['photo_url'] = $path;
         }
+
         $pet = Pet::create($data);
         return response()->json($pet, 201);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show(Pet $pet)
     {
-        //
+        $user = auth('sanctum')->user();
+
+        // Si no es autenticado o no es dueño del refugio, solo devuelve si está disponible
+        if (!$user || ($user->role === 'shelter' && $user->id !== $pet->shelter_id)) {
+            if ($pet->status !== 'available') {
+                return response()->json(['message' => 'No autorizado'], 403);
+            }
+        }
+
         return response()->json($pet->load('shelter', 'applications'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $r, Pet $pet)
-    {
-        //
-        if (auth()->id() !== $pet->shelter_id) return response()->json(['message' => 'Not authorized'], 403);
-        $data = $r->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'nullable|in: available,adopted',
+public function update(Request $r, Pet $pet)
+{
+    $user = auth('sanctum')->user();
 
-        ]);
-        if ($r->hasFile('image_url')) {
-            $path = $r->file('image_url')->store('pets', 'public');
-            $data['image_url'] = $path;
-        }
-
-        $pet->update($data);
-        return response()->json($pet);
+    if (!$user || $user->id !== $pet->shelter_id) {
+        return response()->json(['message' => 'No autorizado'], 403);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    // Acepta tanto PUT como POST + _method=PUT
+    if ($r->isMethod('post') && $r->input('_method') === 'PUT') {
+        $r->setMethod('PUT');
+    }
+
+    $data = $r->validate([
+        'name' => 'sometimes|required|string|max:255',
+        'species' => 'nullable|string|max:255',
+        'breed' => 'nullable|string|max:255',
+        'gender' => 'nullable|in:male,female,Macho,Hembra',
+        'description' => 'nullable|string',
+        'photo_url' => 'nullable|image|max:2048',
+    ]);
+
+    if ($r->hasFile('photo_url')) {
+        $path = $r->file('photo_url')->store('pets', 'public');
+        $data['photo_url'] = $path;
+    }
+
+    Log::info('Datos recibidos para update:', $data);
+
+    $ok = $pet->update($data);
+    Log::info('Actualización exitosa?', [$ok]);
+    Log::info('Pet actualizado:', $pet->toArray());
+
+    return response()->json($pet);
+}
+
+
     public function destroy(Pet $pet)
     {
-        //
-        if (auth()->id() !== $pet->shelter_id) return response()->json(['message' => 'Not authorized'], 403);
+        $user = auth('sanctum')->user();
+
+        if (!$user || $user->id !== $pet->shelter_id) {
+            return response()->json(['message' => 'Not authorized'], 403);
+        }
+
         $pet->delete();
         return response()->json(null, 204);
     }
